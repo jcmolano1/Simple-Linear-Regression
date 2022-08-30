@@ -1,0 +1,279 @@
+---
+title: "Regresión Lineal Simple"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{=html}
+<style type="text/css">
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+</style>
+```
+```{r setup, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo = TRUE)
+defaultW <- getOption("warn") 
+options(warn = -1) 
+library(tidyverse)
+library(palmerpenguins)
+library(reactable)
+library(reactablefmtr)
+library(Hmisc)
+library(DT)
+library(GGally)
+library(corrplot)
+```
+
+#  {.tabset}
+
+## Información
+
+-   Author: **Jose Carlos Molano de Oro**
+
+-   University: Pontificia Universidad Javeriana
+
+-   Course: Linear Regression Analysis
+
+-   Semester: 2022-3
+
+-   Professor: Mario Gregorio Saavedra Rodriguez
+
+-   Author Email: jose_molano\@javeriana.edu.co
+
+-   Professor Email: saavedrarmg\@javeriana.edu.co
+
+## Paquete en R palmerpenguins
+
+### Descripción del Paquete
+
+El paquete palmerpenguins contiene los datasets:
+
+- penguins: Size measurements for adult foraging penguins near Palmer Station, Antarctica
+- penguins_raw (penguins): Penguin size, clutch, and blood isotope data for foraging adults near Palmer Station, Antarctica
+
+Se hara el análisis de regresión lineal en base al dataset penguins que posee información de:  
+
+- especie (species)
+- isla (island)
+- sexo (sex)
+- año (year)
+
+se tienen de igual manera para el grupo anterior contiene las medidas de
+
+- longitud de pico (bill_length_mm)
+- altura del pico (bill_depth_mm)
+- longitud de aleta (flipper_length_mm)
+- masa del cuerpo (body_mass_g)
+
+
+### Librerias en R
+
+```
+library(tidyverse)
+library(palmerpenguins)
+library(reactable)
+library(reactablefmtr)
+library (DT)
+library(Hmisc)
+library(GGally)
+library(corrplot)
+```
+
+### Datos dataset penguins
+
+```{r,fig.align = 'center'}
+reactable(penguins,rownames = TRUE)
+```
+
+
+### Resumen dataset penguins
+
+```{r,fig.align = 'center'}
+summary(penguins)
+```
+
+Dado que en las columnas numéricas se tienen valores nulos (NA), estos valores se añadiran con el valor central (mediana) de cada atributo. De igual manera se expresara los años en variable de tipo factor, con fin de conocer cuantos pinguinos se tuvieron en cuenta en el estudio por año
+
+```{r,fig.align = 'center'}
+penguins[,3:6]<-penguins[,3:6] %>% mutate_all(~ifelse(is.na(.x), median(.x, na.rm = TRUE), .x))
+penguins$year<-as.factor(unlist(penguins$year))
+summary(penguins)
+```
+
+### Valores Promedio en Columnas Muméricas (mean)
+
+```{r,fig.align = 'center'}
+datatable(as.matrix(sapply(penguins[,3:6],function(x) mean(x, na.rm=TRUE))))
+```
+
+Las medidas promedio en toda la población de la muestra de pinguinos en (mm) y su masa en (g) son:
+
+- longitud de pico (bill_length_mm): 43.925
+- altura del pico (bill_depth_mm): 17.152
+- longitud de aleta (flipper_length_mm): 200.892
+- masa del cuerpo (body_mass_g): 4200.872
+
+### Matriz y Gráfico de Correlación entre Variables Numéricas
+
+#### Matriz de Correlación
+
+```{r,fig.align = 'center'}
+c=cor(penguins[,3:6])
+y=as.data.frame(c)
+y[y==1]<-" "
+y <- mutate_all(y, function(x) as.numeric(as.character(x)))
+
+
+reactable(as.data.frame.array((y)),
+          defaultColDef = colDef(
+            style = highlight_min_max(as.data.frame.array((y)))))
+```
+
+#### Gráfico de Correlación
+
+```{r,fig.align = 'center'}
+corrplot(cor(penguins[,3:6],use = "complete.obs"),method="number")
+corrplot(cor(penguins[,3:6],use = "complete.obs"),method="circle")
+```
+
+Se puede apreciar que los atributos que están más correlacionados positivamente entre si por orden son:
+
+- masa del cuerpo (body_mass_g) y longitud de aleta (flipper_length_mm): 0.87
+- longitud de aleta (flipper_length_mm) y altura del pico (bill_depth_mm): 0.66
+- masa del cuerpo (body_mass_g) y longitud de pico (bill_length_mm): 0.55
+
+Para la construcción del modelo de regresión se construira un modelo entre las variables de masa del cuerpo (body_mass_g) vs. longitud de aleta (flipper_length_mm) y longitud de aleta (flipper_length_mm) y altura del pico (bill_depth_mm).
+
+Para las variables masa del cuerpo (body_mass_g) vs. longitud de pico (bill_length_mm) se descarta la construcción del modelo dado que su estadistico de correlación esta muy cercano al 0.5, es decir que no se podria concluir bien si sus valores están directamente correlacionados o no.
+
+### Gráficos de Dispersión - Correlaciones de Pearson
+
+
+#### Gráfico de Dispersión con el Tipo de Especie
+
+```{r,fig.align = 'center'}
+ggscatmat(penguins, columns=3:6, color="species")
+```
+
+A partir del gráfico anterior se puede apreciar lo siguiente:
+
+- El gráfico de dispersión de las variables longitud de aleta (flipper_length_mm) vs masa del cuerpo (body_mass_g) tiene un comportamiento muy similar a una función lineal con pendiente positiva teniendo en cuenta todas las especies. A mayor peso del pinguino mayor sera su longitud de aleta.
+
+- El gráfico de dispersión de las variables longitud de pico (bill_length_mm) vs masa del cuerpo (body_mass_g) tiene un comportamiento muy similar a una función lineal con pendiente positiva teniendo en cuenta solo las especies de tipo Adelie (0.67) y Gentoo (0.59). A mayor peso del pinguino mayor sera su longitud de pico.
+
+- El gráfico de dispersión de las variables longitud de pico (bill_length_mm) vs longitud de aleta (flipper_length_mm) tiene un comportamiento muy similar a una función lineal con pendiente positiva teniendo en cuenta solo las especies de tipo Gentoo (0.7). A mayor longitud de pico mayor sera la longitud de aleta del pinguino.
+
+
+
+
+Se proceden a construir algunos modelos de regresión lineal teniendo en cuenta las variables que tienen mas correlación con los gráficos anteriores.
+
+## Modelos de Regresión Lineal
+
+### 1. Longitud de Aleta vs Masa del Cuerpo por Especie
+
+```{r,fig.align = 'center'}
+ggplot(penguins, aes(y = flipper_length_mm, 
+                      x = body_mass_g, 
+                      )) +
+     geom_point() +
+  stat_smooth()
+```
+
+#### Ecuación de Regresión Lineal
+
+$$
+\textrm{flipper_length_mm}=\beta_0+\beta_1\times \text{body_mass_g}+e
+$$
+
+$$
+e_i\sim\mathcal{N}(0,\sigma^2)
+$$
+$$
+f(x)=m\cdot x+b+e
+$$
+
+#### Ajuste del Modelo
+
+```{r}
+model1<-lm(flipper_length_mm~body_mass_g,data=penguins)
+model1
+```
+
+$$
+\widehat{\textrm{flipper_length_mm}}_i=\widehat\beta_0+\widehat\beta_1\times \text{body_mass_g}_i+e_i
+$$
+$$
+=1.367\times 10^2+1.528\times10^{-2}\times \text{body_mass_g}_i+e_i
+$$
+$$
+e_i\sim\mathcal{N}(0,\sigma^2)
+$$
+$$
+\widehat{\textrm{flipper_length_mm}}_i=\widehat\beta_0+\widehat\beta_1\times \text{body_mass_g}_i
+$$
+$$
+=1.367\times 10^2+1.528\times10^{-2}\times \text{body_mass_g}_i
+$$
+$$
+e_i=\textrm{flipper_length_mm}_i-\widehat{\textrm{flipper_length_mm}}_i
+$$
+
+#### Resumen del Modelo
+
+```{r}
+summary(model1)
+```
+
+#### Linea de Regresión del Modelo
+
+```{r}
+ggplot(penguins, aes(x = body_mass_g, 
+                      y = flipper_length_mm, 
+                      )) +
+     geom_point() +
+  stat_smooth(method=lm)
+```
+
+#### Intervalos de Confianza para los Parámetros del Modelo
+
+```{r}
+confint(model1)
+```
+
+
+### 2. Longitud de Pico vs Masa del Cuerpo  por Especies Adelie y Gentoo
+
+```{r,fig.align = 'center'}
+AdelieGentoo<-subset(penguins,species!="Chinstrap")
+ggplot(AdelieGentoo, aes(y = bill_length_mm, 
+                      x = body_mass_g, 
+                     )) +
+     geom_point() +
+  stat_smooth()
+```
+
+
+
+### 3. Longitud de Pico vs Longitud de Aleta por Especie Gentoo
+
+```{r,fig.align = 'center'}
+Gentoo<-subset(penguins,species=="Gentoo")
+ggplot(Gentoo, aes(y = bill_length_mm, 
+                      x = flipper_length_mm, 
+                      color=species)) +
+     geom_point() +
+  stat_smooth()
+```
+
+## Referencias Bibliográficas
+
+
+
+```{r, include=FALSE}
+options(warn = defaultW)
+```
