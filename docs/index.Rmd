@@ -258,6 +258,19 @@ ggplot(AdelieGentoo, aes(y = bill_length_mm,
 ```
 
 
+#### Ecuación de Regresión Lineal
+
+$$
+\textrm{bill_length_mm}=\beta_0+\beta_1\times \text{body_mass_g}+e
+$$
+
+$$
+e_i\sim\mathcal{N}(0,\sigma^2)
+$$
+$$
+f(x)=m\cdot x+b+e
+$$
+
 
 ### 3. Longitud de Pico vs Longitud de Aleta por Especie Gentoo
 
@@ -272,7 +285,6 @@ ggplot(Gentoo, aes(y = bill_length_mm,
 
 ## Referencias Bibliográficas
 
-## Otros 
 
 ```{r, include=FALSE}
 options(warn = defaultW)
