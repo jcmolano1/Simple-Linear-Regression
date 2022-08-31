@@ -26,6 +26,7 @@ library(Hmisc)
 library(DT)
 library(GGally)
 library(corrplot)
+library(ggfortify)
 ```
 
 #  {.tabset}
@@ -81,6 +82,7 @@ library (DT)
 library(Hmisc)
 library(GGally)
 library(corrplot)
+library(ggfortify)
 ```
 
 ### Datos dataset penguins
@@ -229,14 +231,19 @@ $$
 summary(model1)
 ```
 
-#### Linea de Regresión del Modelo
+A partir de lo anterior se puede observar:
+
+- $R^2 \text{ajustado}=0.7583$ el modelo tiene un buen ajuste con las variables seleccionadas para el estudio (cercano a 1).
+- $p-\text{value}=2.2\times10^{-16} <0.05$ esto significa que la hipótesis nula del modelo se rechaza, es decir que con las variables seleccionadas existe un tipo de relación lineal entre ellas.
+
+#### Representación del Modelo
 
 ```{r}
 ggplot(penguins, aes(x = body_mass_g, 
                       y = flipper_length_mm, 
                       )) +
      geom_point() +
-  stat_smooth(method=lm)
+  stat_smooth(method=lm, se = TRUE, color = "red")
 ```
 
 #### Intervalos de Confianza para los Parámetros del Modelo
@@ -245,6 +252,53 @@ ggplot(penguins, aes(x = body_mass_g,
 confint(model1)
 ```
 
+#### Condiciones de Aceptación del Modelo de Regresión Lineal
+
+##### Residuos del Modelo
+
+```{r,fig.align = 'center'}
+penguins$fitted_values<-model1$fitted.values
+penguins$residuals<-model1$residuals
+
+ggplot(penguins, aes(x = fitted_values, y = residuals)) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue3", mid = "grey", high = "red") +
+    geom_hline(yintercept = 0) +
+    geom_segment(aes(xend = fitted_values, yend = 0), alpha = 0.2) +
+    theme_bw() +
+    theme( legend.position = "none")
+
+```
+
+Los residuos se distribuyen de manera aleatoria entorno a la recta $y=0$, por lo cual se acepta la linealidad.
+
+##### Histograma de los Residuos 
+
+```{r,fig.align = 'center'}
+ggplot(penguins, aes(x = residuals)) +
+    geom_histogram(aes(y = ..density..),bins=90,fill='white',color=4) +
+    theme_light()
+```
+
+##### Verificación de Supuestos
+
+```{r,fig.align = 'center'}
+autoplot(model1)
+shapiro.test(model1$residuals)
+```
+
+Dado que en mi test anterior, mi $p-\text{value}<0.05$, se rechaza la hipótesis nula por lo cual los residuos no presentan un comportamiento normal.
+
+```{r,fig.align = 'center'}
+ggplot(penguins, aes(x = fitted_values, y = residuals)) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue3", mid = "grey", high = "red") +
+    geom_segment(aes(xend = fitted_values, yend = 0), alpha = 0.2) +
+    geom_smooth(se = FALSE, color = "firebrick") +
+    geom_hline(yintercept = 0) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+```
 
 ### 2. Longitud de Pico vs Masa del Cuerpo  por Especies Adelie y Gentoo
 
@@ -271,6 +325,13 @@ $$
 f(x)=m\cdot x+b+e
 $$
 
+#### Ajuste del Modelo
+
+```{r}
+model2<-lm(bill_length_mm~body_mass_g,data=penguins)
+model2
+```
+
 
 ### 3. Longitud de Pico vs Longitud de Aleta por Especie Gentoo
 
@@ -285,6 +346,15 @@ ggplot(Gentoo, aes(y = bill_length_mm,
 
 ## Referencias Bibliográficas
 
+- https://www.cienciadedatos.net/documentos/24_correlacion_y_regresion_lineal#Ejemplo18
+- https://rpubs.com/mgsaavedraro/925582
+- https://rpubs.com/F3rnando/507482
+- https://rstudio-pubs-static.s3.amazonaws.com/385451_2683733d503746acb3c135db8692f1bc.html
+- https://fhernanb.github.io/libro_regresion/rls.html
+- https://rpubs.com/joser/RegresionSimple
+- https://www.sfu.ca/~mjbrydon/tutorials/BAinR/regression.html
+- https://www.datacamp.com/tutorial/linear-regression-R#residuals
+- http://www.sthda.com/english/articles/40-regression-analysis/167-simple-linear-regression-in-r/
 
 ```{r, include=FALSE}
 options(warn = defaultW)
