@@ -146,7 +146,7 @@ Se puede apreciar que los atributos que están más correlacionados positivament
 
 - masa del cuerpo (body_mass_g) y longitud de aleta (flipper_length_mm): 0.87
 - longitud de aleta (flipper_length_mm) y altura del pico (bill_depth_mm): 0.66
-- masa del cuerpo (body_mass_g) y longitud de pico (bill_length_mm): 0.55
+- masa del cuerpo (body_mass_g) y longitud de pico (bill_length_mm): 0.59
 
 Para la construcción del modelo de regresión se construira un modelo entre las variables de masa del cuerpo (body_mass_g) vs. longitud de aleta (flipper_length_mm) y longitud de aleta (flipper_length_mm) y altura del pico (bill_depth_mm).
 
@@ -213,7 +213,7 @@ $$
 =1.367\times 10^2+1.528\times10^{-2}\times \text{body_mass_g}_i+e_i
 $$
 $$
-e_i\sim\mathcal{N}(0,\sigma^2)
+e\sim\mathcal{N}(0,\sigma^2)
 $$
 $$
 \widehat{\textrm{flipper_length_mm}}_i=\widehat\beta_0+\widehat\beta_1\times \text{body_mass_g}_i
@@ -319,7 +319,7 @@ $$
 $$
 
 $$
-e_i\sim\mathcal{N}(0,\sigma^2)
+e\sim\mathcal{N}(0,\sigma^2)
 $$
 $$
 f(x)=m\cdot x+b+e
@@ -328,22 +328,117 @@ $$
 #### Ajuste del Modelo
 
 ```{r}
-model2<-lm(bill_length_mm~body_mass_g,data=penguins)
+model2<-lm(bill_length_mm~body_mass_g,data=AdelieGentoo)
 model2
 ```
 
-kll
+$$
+\widehat{\textrm{bill_length_mm}}_i=\widehat\beta_0+\widehat\beta_1\times \text{body_mass_g}_i+e_i
+$$
+$$
+=1.923+5.441\times10^{-3}\times\text{body_mass_g}+e_i
+$$
+$$
+e_i\sim\mathcal{N}(0,\sigma^2)
+$$
+$$
+\widehat{\textrm{bill_length_mm}}_i=\widehat\beta_0+\widehat\beta_1\times \text{body_mass_g}_i
+$$
+$$
+=1.923+5.441\times10^{-3}\times\text{body_mass_g}
+$$
 
-### 3. Longitud de Pico vs Longitud de Aleta por Especie Gentoo
+$$
+e_i=\textrm{bill_length_mm}_i-\widehat{\textrm{bill_length_mm}}_i
+$$
+
+#### Resumen del Modelo
+
+```{r}
+summary(model2)
+```
+
+- $R^2 \text{ajustado}=0.7655$ el modelo tiene un buen ajuste con las variables seleccionadas para el estudio (cercano a 1).
+- $p-\text{value}=2.2\times10^{-16} <0.05$ esto significa que la hipótesis nula del modelo se rechaza, es decir que con las variables seleccionadas existe un tipo de relación lineal entre ellas.
+
+#### Representación del Modelo
+
+```{r}
+ggplot(AdelieGentoo, aes(x = body_mass_g, 
+                      y = bill_length_mm, 
+                      )) +
+     geom_point() +
+  stat_smooth(method=lm, se = TRUE, color = "red")
+```
+
+#### Intervalos de Confianza para los Parámetros del Modelo
+
+```{r}
+confint(model2)
+```
+
+#### Condiciones de Aceptación del Modelo de Regresión Lineal
+
+##### Residuos del Modelo
 
 ```{r,fig.align = 'center'}
-Gentoo<-subset(penguins,species=="Gentoo")
-ggplot(Gentoo, aes(y = bill_length_mm, 
-                      x = flipper_length_mm, 
-                      color=species)) +
-     geom_point() +
-  stat_smooth()
+AdelieGentoo$fitted_values<-model2$fitted.values
+AdelieGentoo$residuals<-model2$residuals
+
+ggplot(AdelieGentoo, aes(x = fitted_values, y = residuals)) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue3", mid = "grey", high = "red") +
+    geom_hline(yintercept = 0) +
+    geom_segment(aes(xend = fitted_values, yend = 0), alpha = 0.2) +
+    theme_bw() +
+    theme( legend.position = "none")
+
 ```
+
+Los residuos se distribuyen de manera aleatoria entorno a la recta $y=0$, por lo cual se acepta la linealidad.
+
+##### Histograma de los Residuos 
+
+```{r,fig.align = 'center'}
+ggplot(AdelieGentoo, aes(x = residuals)) +
+    geom_histogram(aes(y = ..density..),bins=90,fill='white',color=4) +
+    theme_light()
+```
+
+##### Verificación de Supuestos
+
+```{r,fig.align = 'center'}
+autoplot(model2)
+shapiro.test(model2$residuals)
+```
+
+Dado que en mi test anterior, mi $p-\text{value}>0.05$, se rechaza la hipótesis alternativa por lo cual los residuos presentan un comportamiento normal.
+
+```{r,fig.align = 'center'}
+ggplot(AdelieGentoo, aes(x = fitted_values, y = residuals)) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue3", mid = "grey", high = "red") +
+    geom_segment(aes(xend = fitted_values, yend = 0), alpha = 0.2) +
+    geom_smooth(se = FALSE, color = "firebrick") +
+    geom_hline(yintercept = 0) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+```
+
+### Conclusiones de los 2 Modelos
+
+#### Modelo 1
+
+- $R^2 \text{ajustado}=0.7655$ el modelo tiene un buen ajuste con las variables seleccionadas para el estudio (cercano a 1).
+- $p-\text{value}=2.2\times10^{-16} <0.05$ esto significa que la hipótesis nula del modelo se rechaza, es decir que con las variables seleccionadas existe un tipo de relación lineal entre ellas.
+- Teniendo en cuenta el test de normalidad de Shapiro-Wilk para los residuos del modelo, mi $p-\text{value}<0.05$, se rechaza la hipótesis nula por lo cual los residuos no presentan un comportamiento normal. Quiza podría darse el caso que estandarizando las variables del modelo, sus residuos logren tener un comportamiento normal 
+
+#### Modelo 2
+
+- $R^2 \text{ajustado}=0.7655$ el modelo tiene un buen ajuste con las variables seleccionadas para el estudio (cercano a 1).
+- $p-\text{value}=2.2\times10^{-16} <0.05$ esto significa que la hipótesis nula del modelo se rechaza, es decir que con las variables seleccionadas existe un tipo de relación lineal entre ellas.
+- Teniendo en cuenta el test de normalidad de Shapiro-Wilk para los residuos del modelo, mi $p-\text{value}>0.05$, se rechaza la hipótesis alternativa por lo cual los residuos presentan un comportamiento normal.
+
 
 ## Referencias Bibliográficas
 
