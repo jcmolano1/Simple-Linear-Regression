@@ -332,6 +332,7 @@ model2<-lm(bill_length_mm~body_mass_g,data=penguins)
 model2
 ```
 
+kll
 
 ### 3. Longitud de Pico vs Longitud de Aleta por Especie Gentoo
 
